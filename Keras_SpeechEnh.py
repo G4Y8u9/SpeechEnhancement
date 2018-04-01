@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 
 from keras import backend as K
-from keras import optimizers, regularizers
+from keras import optimizers
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.callbacks import EarlyStopping
-from scipy.io import wavfile
-from scipy.signal import stft, istft
-from util import get_Zyy, list_dir_shuffle, make_window_buffer, test_model, unnormalize
-import matplotlib.pyplot as plt
-import numpy as np
+from keras.layers import Dense
+# from keras import regularizers
+# from keras.layers import Dropout
+# from keras.callbacks import EarlyStopping
+# from scipy.io import wavfile
+# from scipy.signal import stft, istft
+# from util import unnormalize
+# import matplotlib.pyplot as plt
+# import numpy as np
+from util import get_Zyy, list_dir_shuffle, make_window_buffer, test_model
 import tensorflow as tf
 import time
 
@@ -155,62 +158,62 @@ print('model saved in ' + '.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
 #     print('loss: ', loss)
 
 
-"""
-    now we use the model to do sth
-"""
-testDir = 'E:\\SpeechEnhancement\\test\\5db\\06.wav'
-_, s = wavfile.read(testDir)
-f, t, Zxx = stft(s, freq)
-Zxx1 = np.log((np.abs(Zxx)).T+1e-7)
-# construct the input format for the DNN
-y_input = make_window_buffer(testDir, neighbor=neighbor, nfft=nffts)
-y = model.predict(y_input).T
-# construct the spectrogram with the abs of the output and the angle of the noisy sound, then ISTFT
-# ypreComplex = y * np.exp(complex(0, 1) * np.angle(Zxx))
-ypreComplex = np.exp(y) * np.exp(complex(0, 1) * np.angle(Zxx)) if normal_flag == 0 \
-        else np.exp(unnormalize(y, Zxx1)) * np.exp(complex(0, 1) * np.angle(Zxx))
-_, xrec = istft(ypreComplex, freq)
-# the DNN output spectrogram
-plt.figure()
-plt.pcolormesh(t, f, np.abs(ypreComplex))
-plt.ylim([f[1], f[-1]])
-plt.title('DNN output')
-plt.ylabel('Frequency [Hz]')
-plt.xlabel('Time [sec]')
-plt.show()
-# the noisy speech spectrogram
-plt.figure()
-plt.pcolormesh(t, f, np.abs(Zxx1))
-plt.ylim([f[1], f[-1]])
-plt.title('noisy spec')
-plt.ylabel('Frequency [Hz]')
-plt.xlabel('Time [sec]')
-plt.show()
-# # and take a look of pure speech spectrogram
-# _, pure = wavfile.read('E:\\SpeechEnhancement\\test\\5db\\06.wav')
-# _, _, pureX = stft(pure, freq)
+# """
+#     now we use the model to do sth
+# """
+# testDir = 'E:\\SpeechEnhancement\\test\\5db\\06.wav'
+# _, s = wavfile.read(testDir)
+# f, t, Zxx = stft(s, freq)
+# Zxx1 = np.log((np.abs(Zxx)).T+1e-7)
+# # construct the input format for the DNN
+# y_input = make_window_buffer(testDir, neighbor=neighbor, nfft=nffts)
+# y = model.predict(y_input).T
+# # construct the spectrogram with the abs of the output and the angle of the noisy sound, then ISTFT
+# # ypreComplex = y * np.exp(complex(0, 1) * np.angle(Zxx))
+# ypreComplex = np.exp(y) * np.exp(complex(0, 1) * np.angle(Zxx)) if normal_flag == 0 \
+#         else np.exp(unnormalize(y, Zxx1)) * np.exp(complex(0, 1) * np.angle(Zxx))
+# _, xrec = istft(ypreComplex, freq)
+# # the DNN output spectrogram
 # plt.figure()
-# plt.pcolormesh(t, f, np.abs(pureX))
+# plt.pcolormesh(t, f, np.abs(ypreComplex))
 # plt.ylim([f[1], f[-1]])
-# plt.title('pure spec')
+# plt.title('DNN output')
 # plt.ylabel('Frequency [Hz]')
 # plt.xlabel('Time [sec]')
 # plt.show()
-# write wav file
-dataWrite = xrec.astype(np.int16)   # extremely important!
-wavfile.write('./predict777' + str(testdB) + '.wav', freq, dataWrite)
+# # the noisy speech spectrogram
+# plt.figure()
+# plt.pcolormesh(t, f, np.abs(Zxx1))
+# plt.ylim([f[1], f[-1]])
+# plt.title('noisy spec')
+# plt.ylabel('Frequency [Hz]')
+# plt.xlabel('Time [sec]')
+# plt.show()
+# # # and take a look of pure speech spectrogram
+# # _, pure = wavfile.read('E:\\SpeechEnhancement\\test\\5db\\06.wav')
+# # _, _, pureX = stft(pure, freq)
+# # plt.figure()
+# # plt.pcolormesh(t, f, np.abs(pureX))
+# # plt.ylim([f[1], f[-1]])
+# # plt.title('pure spec')
+# # plt.ylabel('Frequency [Hz]')
+# # plt.xlabel('Time [sec]')
+# # plt.show()
+# # write wav file
+# dataWrite = xrec.astype(np.int16)   # extremely important!
+# wavfile.write('./predict777' + str(testdB) + '.wav', freq, dataWrite)
 
 
 """
     just some other tests
 """
-test_model(model, 'E:\\SpeechEnhancement\\test\\5db\\01.wav', 'E:\\SpeechEnhancement\\test\\5db\\output_norm0_01.wav',
+test_model(model, '.\\test\\5db\\01.wav', '.\\test\\5db\\output_norm0_01.wav',
            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-test_model(model, 'E:\\SpeechEnhancement\\test\\5db\\02.wav', 'E:\\SpeechEnhancement\\test\\5db\\output_norm0_02.wav',
+test_model(model, '.\\test\\5db\\02.wav', '.\\test\\5db\\output_norm0_02.wav',
            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-test_model(model, 'E:\\SpeechEnhancement\\test\\5db\\03.wav', 'E:\\SpeechEnhancement\\test\\5db\\output_norm0_03.wav',
+test_model(model, '.\\test\\5db\\03.wav', '.\\test\\5db\\output_norm0_03.wav',
            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-test_model(model, 'E:\\SpeechEnhancement\\test\\5db\\04.wav', 'E:\\SpeechEnhancement\\test\\5db\\output_norm0_04.wav',
+test_model(model, '.\\test\\5db\\04.wav', '.\\test\\5db\\output_norm0_04.wav',
            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-test_model(model, 'E:\\SpeechEnhancement\\test\\5db\\05.wav', 'E:\\SpeechEnhancement\\test\\5db\\output_norm0_05.wav',
+test_model(model, '.\\test\\5db\\05.wav', '.\\test\\5db\\output_norm0_05.wav',
            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
