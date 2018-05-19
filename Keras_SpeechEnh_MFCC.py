@@ -12,7 +12,7 @@ from keras.layers import Dense
 # import matplotlib.pyplot as plt
 # import numpy as np
 # from keras import backend as K
-from util import get_Zyy, list_dir_shuffle, make_window_buffer, test_model, mean_squared_error
+from util import combine_with_mfcc_Zyy, list_dir_shuffle, combine_with_mfcc, test_model_mfcc, mean_squared_error
 import tensorflow as tf
 import time
 import os
@@ -52,7 +52,7 @@ assert (testdB == 10 or testdB == 5 or testdB == -5 or testdB == -10 or testdB =
 assert (nffts == 128 or nffts == 256 or nffts == 512 or nffts == 1024 or nffts == 2048 or nffts == 4096),\
     'nffts must be 2^n, but now it is ' + str(nffts)
 assert (fr == 1 or fr == 5 or fr == 9 or fr == 11 or fr == 13), 'fr must be 1, 5, 9, 11, 13'
-assert (hid_neus >= frwd * fr), 'Hidden neurons are too few! Reduce fr or reduce nffts or increase hid_neus!'
+assert (hid_neus >= frwd * fr + 39), 'Hidden neurons are too few! Reduce fr or reduce nffts or increase hid_neus!'
 
 
 """
@@ -77,13 +77,14 @@ list_dir_shuffle('G:\\trainData\\' + str(testdB) + 'db\\noisy',
 """
 model = Sequential()
 # input layer to hidden layer 1   frame * framewidth float -> hidden neurons float
-model.add(Dense(hid_neus, activation='relu', dtype=tf.float32, input_dim=frwd*fr))
+model.add(Dense(hid_neus, activation='relu', dtype=tf.float32, input_dim=frwd*fr+39))
+# model.add(Dropout(0.1))
 # hidden layer 2   hidden neurons float -> hidden neurons float
 model.add(Dense(hid_neus, activation='relu', dtype=tf.float32))
 # hidden layer 3   hidden neurons float -> hidden neurons float
 model.add(Dense(hid_neus, activation='relu', dtype=tf.float32))
 # output layer   hidden neurons float -> framewidth float
-model.add(Dense(frwd, activation='linear', dtype=tf.float32))
+model.add(Dense(frwd+39, activation='linear', dtype=tf.float32))
 
 
 """
@@ -108,16 +109,14 @@ start_time = time.time()
 for epoch in range(epochs):
     nfile = 0
     for x, y in zip(X_train_list, Y_train_list):
-        xt = make_window_buffer(x, neighbor=neighbor, nfft=nffts, normal_flag=normal_flag)
-        yt = get_Zyy(y, nfft=nffts, normal_flag=normal_flag)
+        xt = combine_with_mfcc(x, neighbor=neighbor, nfft=nffts, normal_flag=normal_flag)
+        yt = combine_with_mfcc_Zyy(y, nfft=nffts, normal_flag=normal_flag)
         model.fit(xt, yt)
         print('EPOCH %d/%d, file %d' % (epoch+1, epochs, nfile+1))
         nfile += 1
         if nfile % 50 == 0:
-            model.save_weights('.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
-                               + ('' if normal_flag == 0 else '_norm') + '_SNR' + str(testdB) + '.h5')
-            print('.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
-                  + ('' if normal_flag == 0 else '_norm') + '_SNR' + str(testdB) + '.h5')
+            model.save_weights('.\\models_allkind\\MFCC_7200_fr11.h5')
+            print('MFCC_7200_fr11.h5 saved!')
     del nfile
 print(time.time()-start_time)
 
@@ -125,16 +124,17 @@ print(time.time()-start_time)
 """
     save model
 """
-model.save_weights('.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
-                   + ('' if normal_flag == 0 else '_norm') + '_SNR' + str(testdB) + '.h5')
-print('model saved in ' + '.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
-      + ('' if normal_flag == 0 else '_norm') + '_SNR' + str(testdB) + '.h5')
+# model.save_weights('.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
+#                    + ('' if normal_flag == 0 else '_norm') + '_SNR' + str(testdB) + '.h5')
+model.save_weights('.\\models_allkind\\MFCC_7200_fr11.h5')
+# print('model saved in ' + '.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
+#       + ('' if normal_flag == 0 else '_norm') + '_SNR' + str(testdB) + '.h5')
 
 # """
 #     load model
 # """
 # # model.load_weights('.\\models_allkind\\myModelWeight_exp_fr'+str(fr)+'_SNR_'+str(testdB)+'.h5')
-# model.load_weights('./models_allkind/train N/20180322 LogPower fr9 SNR-5 7200 adam 000002 relu relu relu linear.h5')
+# model.load_weights('.\\models_allkind\\MFCC_7200_fr11.h5')
 
 
 # """
@@ -198,16 +198,16 @@ print('model saved in ' + '.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
 # """
 #     just some other tests
 # """
-# test_model(model, '.\\test\\01.wav', '.\\test\\output_01.wav',
+# test_model_mfcc(model, '.\\test\\01.wav', '.\\test\\output_01.wav',
+#                 neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
+# test_model_mfcc(model, '.\\test\\02.wav', '.\\test\\output_02.wav',
+#                 neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
+# test_model_mfcc(model, '.\\test\\03.wav', '.\\test\\output_03.wav',
+#                 neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
+# test_model(model, '.\\test\\5db\\04.wav', '.\\test\\5db\\output_norm0_04.wav',
 #            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-# test_model(model, '.\\test\\02.wav', '.\\test\\output_02.wav',
+# test_model(model, '.\\test\\5db\\05.wav', '.\\test\\5db\\output_norm0_05.wav',
 #            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-# test_model(model, '.\\test\\03.wav', '.\\test\\output_03.wav',
-#            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-# # test_model(model, '.\\test\\5db\\04.wav', '.\\test\\5db\\output_norm0_04.wav',
-# #            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
-# # test_model(model, '.\\test\\5db\\05.wav', '.\\test\\5db\\output_norm0_05.wav',
-# #            neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
 
 """
     used for statistics
@@ -215,8 +215,8 @@ print('model saved in ' + '.\\models_allkind\\myModelWeight_exp_fr' + str(fr)
 noisy_test_samples = os.listdir('G:\\trainData\\'+str(testdB)+'db\\test\\noisy')
 for each in noisy_test_samples:
     print('processing file', each, '...')
-    test_model(model,
-               'G:\\trainData\\'+str(testdB)+'db\\test\\noisy\\'+each,
-               'G:\\trainData\\'+str(testdB)+'db\\test\\output\\trainN\\7200\\'+each,
-               neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
+    test_model_mfcc(model,
+                    'G:\\trainData\\'+str(testdB)+'db\\test\\noisy\\'+each,
+                    'G:\\trainData\\'+str(testdB)+'db\\test\\output\\mfcc\\'+each,
+                    neighbor=neighbor, nffts=nffts, normal_flag=normal_flag)
     print('file', each, 'processed!')
